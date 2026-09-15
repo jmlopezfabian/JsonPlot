@@ -124,12 +124,14 @@ notebook, run against a local model and committed with its output:
 
 ## Does it work?
 
-`evals/local_llm.py` puts twelve natural-language requests through a local model
-and validates every contract that comes back.
+`uv run evals` puts twelve natural-language requests through a model and
+validates every contract that comes back. Every answer is recorded in
+`evals/runs/`, so without `--live` it replays them and needs no model.
 
 ```bash
+uv run evals                 # replay the recorded answers
 ollama serve &
-uv run python evals/local_llm.py --model qwen2.5:7b-instruct
+uv run evals --live          # ask qwen2.5:7b-instruct again
 ```
 
 | Prompt | Correct outcomes |
@@ -137,7 +139,7 @@ uv run python evals/local_llm.py --model qwen2.5:7b-instruct
 | columns + a sentence naming the flat keys | 6 / 12 |
 | columns + "write me Vega-Lite", translated by the dialect | 5 / 12 |
 | columns + the generated contract | 11 / 12 |
-| …plus one repair round | 12 / 12 |
+| …plus one repair round | 11 / 12 |
 
 Accepting Vega-Lite's spelling is worth doing — it costs a lookup table and it
 means a contract in the dialect a model knows best does not die on vocabulary —

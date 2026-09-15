@@ -106,14 +106,27 @@ jp.tool_definition()                              # for tool-calling
 agent.context(df, sections=("types", "rules"))    # when the budget is tight
 ```
 
-It measurably helps. `evals/local_llm.py` puts twelve natural-language requests
-through a local model and validates what comes back — with
-`qwen2.5:7b-instruct`, 6/12 correct outcomes without the briefing, 11/12 with
-it, 12/12 with one repair round.
+It measurably helps. `uv run evals` puts twelve natural-language requests
+through a model under four prompts and validates what comes back:
+
+| model | bare | vega_lite | briefing | briefing+repair |
+| --- | ---: | ---: | ---: | ---: |
+| `qwen2.5:7b-instruct` | 6/12 | 5/12 | 11/12 | 11/12 |
+
+`bare` is the columns plus a sentence naming the flat keys; `vega_lite` asks for
+Vega-Lite and lets the dialect translate it; `briefing` is the generated
+contract; `briefing+repair` sends the validator's errors back once. One request
+asks for a 3D surface, which this does not draw, so there a rejection is the
+right outcome — and it is the one the repair round loses: shown the errors, the
+model turns the surface into a valid scatter nobody asked for.
+
+Every answer is recorded in `evals/runs/`, so the command replays the table
+above on a machine with no model installed, and a test fails when the two stop
+matching. To ask the model again:
 
 ```bash
 ollama serve &
-uv run python evals/local_llm.py --model qwen2.5:7b-instruct
+uv run evals --live
 ```
 
 `docs/CONTRACT.md` is a committed snapshot of the same document.

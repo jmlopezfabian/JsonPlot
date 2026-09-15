@@ -82,18 +82,20 @@ Add a chart type and it appears in the next prompt. A test fails if you add one
 and document nothing. That page is [The contract](CONTRACT.md), and it is built
 fresh on every deploy of this site.
 
-It measurably helps. `evals/local_llm.py` runs twelve natural-language requests
-through a local model and validates every contract that comes back:
+It measurably helps. `uv run evals` runs twelve natural-language requests
+through a model and validates every contract that comes back:
 
 | Prompt | Correct outcomes |
 | --- | --- |
 | columns + a sentence naming the keys | 6 / 12 |
 | columns + "write me Vega-Lite" | 5 / 12 |
 | columns + the generated contract | 11 / 12 |
-| …plus one repair round | 12 / 12 |
+| …plus one repair round | 11 / 12 |
 
-<small>`qwen2.5:7b-instruct` via Ollama. One request asks for a 3D surface, which
-this does not draw; a rejection is the correct outcome and is scored as one.</small>
+<small>`qwen2.5:7b-instruct` via Ollama, replayed from the answers recorded in
+`evals/runs/`. One request asks for a 3D surface, which this does not draw; a
+rejection is the correct outcome and is scored as one. The repair round fixes
+the other miss and loses that one, turning the surface into a valid scatter.</small>
 
 ## Where to go next
 

@@ -1,0 +1,25 @@
+[project]
+name = "jsonplot-evals"
+version = "0.1.0"
+description = "Natural-language requests in, contracts scored: the evaluation harness for jsonplot"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [{ name = "Jesús Manuel López Fabián", email = "jmlopezfabian@gmail.com" }]
+dependencies = [
+    "jsonplot",
+    "numpy",
+    "pandas>=2.1",
+]
+
+[project.scripts]
+evals = "jsonplot_evals.cli:main"
+
+[tool.uv.sources]
+jsonplot = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/jsonplot_evals"]

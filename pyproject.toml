@@ -23,6 +23,7 @@ jsonplot = "jsonplot.cli:main"
 [dependency-groups]
 dev = [
     "ipykernel>=7.3.0",
+    "jsonplot-evals",
     "nbclient>=0.11.0",
     "nbformat>=5.11.1",
     "pydantic-ai>=2.38.0",
@@ -37,6 +38,14 @@ docs = [
     "mkdocstrings[python]>=1.0.6",
 ]
 
+[tool.uv.workspace]
+# the eval harness is its own package, so its providers and tracing never
+# become dependencies of jsonplot
+members = ["evals"]
+
+[tool.uv.sources]
+jsonplot-evals = { workspace = true }
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
@@ -45,4 +54,4 @@ build-backend = "hatchling.build"
 packages = ["src/jsonplot"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tests", "evals/tests"]
