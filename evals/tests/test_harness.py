@@ -7,7 +7,7 @@ import json
 import pytest
 
 import jsonplot as jp
-from jsonplot_evals import ROOT, cli, conditions, dataset, frames
+from jsonplot_evals import ROOT, cli, conditions, dataset, frames, tracing
 from jsonplot_evals.dataset import Item
 from jsonplot_evals.providers import Completion, for_model
 from jsonplot_evals.runner import ReplayMiss, Runner
@@ -266,6 +266,31 @@ def test_an_ablation_that_empties_the_briefing_is_refused():
 def test_an_unknown_ablation_is_refused(name):
     with pytest.raises(KeyError):
         conditions.get(name)
+
+
+# -- tracing, which is off unless asked for ---------------------------------
+
+
+@pytest.fixture
+def no_langfuse(monkeypatch):
+    for name in tracing.REQUIRED:
+        monkeypatch.delenv(name, raising=False)
+
+
+def test_without_langfuse_tracing_does_nothing(no_langfuse, ds):
+    """The gate, the tests and a replay must never need a server."""
+    tracer = tracing.tracer("v1-baseline", "v1")
+    assert not tracer.enabled and not tracing.configured()
+    with tracer.item(item(ds, "readme.hist"), "briefing", "a-model") as handle:
+        handle.turn(None, "a-model", {}, "the prompt")
+        handle.score(None)
+    tracer.flush()
+
+
+def test_asking_for_tracing_without_keys_is_an_error(no_langfuse):
+    """Silently not tracing a run someone asked to trace wastes the run."""
+    with pytest.raises(RuntimeError, match="LANGFUSE_PUBLIC_KEY"):
+        tracing.tracer("v1-baseline", "v1", enabled=True)
 
 
 # -- the gate CI runs -------------------------------------------------------

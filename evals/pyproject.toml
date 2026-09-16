@@ -11,6 +11,11 @@ dependencies = [
     "pandas>=2.1",
 ]
 
+[project.optional-dependencies]
+# Tracing is opt-in: the gate, the tests and a replay never need a server, so
+# they never need this.
+tracing = ["langfuse>=3"]
+
 [project.scripts]
 evals = "jsonplot_evals.cli:main"
 

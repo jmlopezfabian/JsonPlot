@@ -146,6 +146,15 @@ wheels = [
 ]
 
 [[package]]
+name = "backoff"
+version = "2.2.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/47/d7/5bbeb12c44d7c4f2fb5b56abce497eb5ed9f34d85701de869acedd602619/backoff-2.2.1.tar.gz", hash = "sha256:03f829f5bb1923180821643f8753b0502c3b682293992485b0eef2807afa5cba", size = 17001, upload-time = "2022-10-05T19:19:32.061Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/df/73/b6e24bd22e6720ca8ee9a85a0c4a2971af8497d8f3193fa05390cbd46e09/backoff-2.2.1-py3-none-any.whl", hash = "sha256:63579f9a0628e06278f7e47b7d7d5b6ce20dc65c5e96a6f3ca99a6adca0396e8", size = 15148, upload-time = "2022-10-05T19:19:30.546Z" },
+]
+
+[[package]]
 name = "backports-tarfile"
 version = "1.2.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1420,12 +1429,19 @@ dependencies = [
     { name = "pandas" },
 ]
 
+[package.optional-dependencies]
+tracing = [
+    { name = "langfuse" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "jsonplot", editable = "." },
+    { name = "langfuse", marker = "extra == 'tracing'", specifier = ">=3" },
     { name = "numpy" },
     { name = "pandas", specifier = ">=2.1" },
 ]
+provides-extras = ["tracing"]
 
 [[package]]
 name = "jsonschema"
@@ -1655,6 +1671,26 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/f4/ce/a7dc71353dd06a4cbe02222773f52d4a28c81e5a452a75797f8ed113dc99/kiwisolver-1.5.1-pp311-pypy311_pp73-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:5daa1f19e097050b9c4d9a78fcc9263cb96c9dfae08037ddc1b7c4ad1889f2a2", size = 79891, upload-time = "2026-08-28T10:28:22.936Z" },
     { url = "https://files.pythonhosted.org/packages/10/b1/d61c61a84ff85d1a36a99df2c152b59ffedb1d356c598902aba44abcdb60/kiwisolver-1.5.1-pp311-pypy311_pp73-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:cdaeeb6c350106df6bf9d873395973e5f066a9713200b72cd64f55d0a3eafab6", size = 77605, upload-time = "2026-08-28T10:28:24.322Z" },
     { url = "https://files.pythonhosted.org/packages/d3/52/5aef56f21a460a6e43ab3cdfc7697d59d7b87deb0ec97a0f7b91aa4a521b/kiwisolver-1.5.1-pp311-pypy311_pp73-win_amd64.whl", hash = "sha256:17851e5dad4484be0cbccbde3b15331deae036de9aebd45eed964487802b172f", size = 98465, upload-time = "2026-08-28T10:28:25.696Z" },
+]
+
+[[package]]
+name = "langfuse"
+version = "4.15.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "backoff" },
+    { name = "httpx" },
+    { name = "opentelemetry-api" },
+    { name = "opentelemetry-exporter-otlp-proto-http" },
+    { name = "opentelemetry-sdk" },
+    { name = "packaging" },
+    { name = "pydantic" },
+    { name = "typing-extensions" },
+    { name = "wrapt" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/cd/82/6de19be5a32d3466188d17eece4832da8e43b786bf9efdbe70f8e77c99e1/langfuse-4.15.3.tar.gz", hash = "sha256:2377ea0b179fe612992d8b79da6ec5a68a0b420c606aa1d523cf728431030aa8", size = 392243, upload-time = "2026-09-15T14:00:22.886Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/df/19/cc006e525fa838259c4d870069c4329e4b5fd2e2de61684dad1a58d93490/langfuse-4.15.3-py3-none-any.whl", hash = "sha256:0d2b2484734e73772fe978e4f1a569117da403cb80dc6a951a81bf59b3f54076", size = 706345, upload-time = "2026-09-15T14:00:24.838Z" },
 ]
 
 [[package]]
