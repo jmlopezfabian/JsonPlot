@@ -101,8 +101,9 @@ class _Handle:
     def turn(self, record: Record, model: str, params: dict, user: str) -> None:
         usage = {k: v for k, v in (("input", record.input_tokens),
                                    ("output", record.output_tokens)) if v is not None}
-        with self._span.start_as_current_generation(
+        with self._span.start_as_current_observation(
             name=f"turn {record.turn}",
+            as_type="generation",
             model=model,
             model_parameters=params,
             input=user,
