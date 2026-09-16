@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import json
 import re
+from copy import deepcopy
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -154,10 +155,13 @@ def _resolve(contract, df: pd.DataFrame) -> _Resolved:
     spec = jp.resolve(contract, df).spec
     dump = spec.model_dump(mode="json", exclude_none=True)
     # A histogram's bin count is presentation: the same distribution drawn
-    # coarser. Everything else that changes the frame changes the answer.
-    if spec.viz_type == "hist" and "x" in dump["encoding"]:
-        dump["encoding"]["x"].pop("bin", None)
-    return _Resolved(spec, dump, jp.build_frame(dump, df))
+    # coarser. Everything else that changes the frame changes the answer. The
+    # frame is built without it; `dump` keeps it, because an item that asks for
+    # a bin count checks for it by path.
+    drawn = deepcopy(dump)
+    if spec.viz_type == "hist" and "x" in drawn["encoding"]:
+        drawn["encoding"]["x"].pop("bin", None)
+    return _Resolved(spec, dump, jp.build_frame(drawn, df))
 
 
 def _differences(pred: _Resolved, gold: _Resolved, check: dict) -> list[dict]:

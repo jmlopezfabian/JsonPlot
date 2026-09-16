@@ -1,6 +1,8 @@
 {
   "version": "v1",
   "frames": {
-    "sales": "a31af4e6c40cbc38"
+    "sales": "a31af4e6c40cbc38",
+    "weather": "7a638d85f8c213eb",
+    "survey": "53bbabe279bdf65a"
   }
 }
