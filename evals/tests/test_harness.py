@@ -9,7 +9,7 @@ import pytest
 import jsonplot as jp
 from jsonplot_evals import ROOT, cli, conditions, dataset, frames
 from jsonplot_evals.dataset import Item
-from jsonplot_evals.providers import Completion
+from jsonplot_evals.providers import Completion, for_model
 from jsonplot_evals.runner import ReplayMiss, Runner
 from jsonplot_evals.score import as_json, score
 from jsonplot_evals.store import Store
@@ -219,6 +219,62 @@ def test_repair_asks_once_and_only_when_invalid(tmp_path):
     right = Scripted(GOOD, model="other")
     runner = Runner(right, Store(tmp_path / "other.jsonl"))
     assert runner.one(ITEM, c).turns == 1 and right.calls == 1
+
+
+# -- the gate CI runs -------------------------------------------------------
+
+
+RIGHT_HIST = '{"viz_type": "hist", "x_axis": "satisfaction"}'
+WRONG_HIST = '{"viz_type": "hist", "x_axis": "price"}'
+GATE_ARGS = ["gate", "--items", "readme.hist", "--conditions", "briefing"]
+
+
+def _recorded(monkeypatch, tmp_path, ds, answer=None):
+    """Point the gate at a recording of this one answer, or at an empty one.
+
+    Seeded through the provider the gate itself resolves, answering from a
+    script instead of over the network: the provider's name, model and
+    parameters are part of the prompt hash, so a stand-in would look stale for
+    reasons that have nothing to do with the prompt.
+    """
+    store = Store(tmp_path / "rec.jsonl")
+    if answer is not None:
+        provider = for_model(cli.DEFAULT_MODEL)
+        provider.complete = lambda system, user: Completion(answer, 10, 5, 0.01)
+        Runner(provider, store).one(item(ds, "readme.hist"), conditions.get("briefing"))
+    monkeypatch.setattr(cli.Store, "for_run",
+                        classmethod(lambda cls, run, model, root=None: store))
+    return store
+
+
+def test_the_gate_fails_when_an_answer_was_never_recorded(monkeypatch, tmp_path, ds):
+    _recorded(monkeypatch, tmp_path, ds)
+    assert cli.main(GATE_ARGS) == 3
+
+
+def test_the_gate_fails_when_the_briefing_moved(monkeypatch, tmp_path, ds, capsys):
+    """The failure this gate exists for: a prompt edited without re-running the
+    eval, which is how a published number goes stale while the tests pass."""
+    _recorded(monkeypatch, tmp_path, ds, RIGHT_HIST)
+    monkeypatch.setattr(conditions, "SYSTEM", "a different system prompt")
+    assert cli.main(GATE_ARGS) == 1
+    assert "since changed" in capsys.readouterr().err
+
+
+def test_the_gate_fails_below_the_floor(monkeypatch, tmp_path, ds, capsys):
+    _recorded(monkeypatch, tmp_path, ds, WRONG_HIST)
+    floors = tmp_path / "thresholds.toml"
+    floors.write_text('[v1-baseline."qwen2.5:7b-instruct"]\nbriefing = 1\n')
+    assert cli.main([*GATE_ARGS, "--thresholds", str(floors)]) == 1
+    # for the floor, not because the recording looked stale
+    assert "below the floor" in capsys.readouterr().err
+
+
+def test_the_gate_passes_when_the_recording_still_holds(monkeypatch, tmp_path, ds):
+    _recorded(monkeypatch, tmp_path, ds, RIGHT_HIST)
+    floors = tmp_path / "thresholds.toml"
+    floors.write_text('[v1-baseline."qwen2.5:7b-instruct"]\nbriefing = 1\n')
+    assert cli.main([*GATE_ARGS, "--thresholds", str(floors)]) == 0
 
 
 # -- the promise in the README ----------------------------------------------

@@ -12,15 +12,17 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import tomllib
 from pathlib import Path
 
-from . import conditions, dataset, report
+from . import ROOT, conditions, dataset, report
 from .providers import ProviderUnavailable, for_model
 from .runner import ReplayMiss, Runner
 from .store import Store
 
 DEFAULT_MODEL = "qwen2.5:7b-instruct"
 DEFAULT_SPLIT = "readme"
+THRESHOLDS = ROOT / "thresholds.toml"
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -52,8 +54,18 @@ def main(argv: list[str] | None = None) -> int:
                      help="which table to print (default: both)")
     run.add_argument("--out", type=Path, help="write the per-item detail here as JSON")
     run.add_argument("-q", "--quiet", action="store_true", help="only print the table")
+
+    gate = sub.add_parser("gate", help="fail the build when the recorded numbers slip")
+    gate.add_argument("--dataset", default="v1")
+    gate.add_argument("--split", nargs="*", default=["readme", "core"])
+    gate.add_argument("--items", nargs="*", help="gate only these item ids")
+    gate.add_argument("--model", nargs="*", default=[DEFAULT_MODEL])
+    gate.add_argument("--conditions", nargs="*", default=["briefing", "briefing+repair"])
+    gate.add_argument("--run", default=None)
+    gate.add_argument("--thresholds", type=Path, default=THRESHOLDS)
+
     args = ap.parse_args(argv)
-    return _run(args)
+    return _gate(args) if args.command == "gate" else _run(args)
 
 
 def _run(args) -> int:
@@ -106,6 +118,67 @@ def _run(args) -> int:
                             encoding="utf-8")
         print(f"\nwrote {args.out}")
     return 0
+
+
+def _gate(args) -> int:
+    """Re-score the recorded answers and hold the line, without a model.
+
+    Three ways to fail, and the middle one is the reason this exists. An answer
+    can be missing. An answer can have been recorded against a prompt that has
+    since changed — a briefing edited without re-running the eval, which is how
+    a published number goes stale while every test still passes. Or the score
+    can simply have dropped below the floor.
+    """
+    ds = dataset.load(args.dataset)
+    items = ds.select(splits=args.split, ids=args.items)
+    chosen = [conditions.get(c) for c in args.conditions]
+    run_name = args.run or f"{ds.version}-baseline"
+    floors = _floors(args.thresholds, run_name)
+    failures: list[str] = []
+
+    for model in args.model:
+        store = Store.for_run(run_name, model)
+        runner = Runner(for_model(model), store, mode="replay")
+        for condition in chosen:
+            try:
+                got = list(runner.run(items, condition))
+            except ReplayMiss as exc:
+                print(f"evals: {exc}\n       record it with `uv run evals run --live "
+                      f"--split {' '.join(args.split)}` and commit the recording",
+                      file=sys.stderr)
+                return 3
+            stale = sum(r.stale for r in got)
+            right = sum(r.outcome.scored for r in got)
+            floor = floors.get((model, condition.name))
+            state = "ok  "
+            if stale:
+                state = "STALE"
+                failures.append(
+                    f"{model} · {condition.name}: {stale} of {len(got)} answers were "
+                    f"given to a prompt that has since changed. The briefing moved and "
+                    f"the eval was not re-run: `uv run evals run --live --fresh`.")
+            elif floor is not None and right < floor:
+                state = "UNDER"
+                failures.append(f"{model} · {condition.name}: {right}/{len(got)} right, "
+                                f"below the floor of {floor}.")
+            shown = "no floor" if floor is None else f"floor {floor}"
+            print(f"{state} {model} · {condition.name}: {right}/{len(got)} right ({shown})")
+
+    if failures:
+        print("\n" + "\n".join(f"· {f}" for f in failures), file=sys.stderr)
+        return 1
+    print("\nthe recorded answers still hold.")
+    return 0
+
+
+def _floors(path: Path, run: str) -> dict[tuple[str, str], int]:
+    """Minimum right outcomes per model and condition, from `thresholds.toml`."""
+    if not path.exists():
+        return {}
+    table = tomllib.loads(path.read_text(encoding="utf-8")).get(run, {})
+    return {(model, condition): floor
+            for model, conditions_ in table.items()
+            for condition, floor in conditions_.items()}
 
 
 def _shown(path: Path) -> Path:

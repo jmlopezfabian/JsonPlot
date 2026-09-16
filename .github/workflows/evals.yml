@@ -1,0 +1,33 @@
+name: evals
+
+# No model runs here. Every answer the models gave is committed under
+# evals/runs/, so CI re-scores the recording with the code in the pull request:
+# it catches a validator, binder or dialect change that breaks contracts which
+# used to be right, and it catches a briefing edited without re-running the eval
+# — the recorded prompt hashes stop matching, and a published number goes stale
+# exactly that way. Asking a 7B model 500 times on a GitHub runner would take
+# hours and answer a different question.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install
+        run: uv sync
+
+      - name: The dataset must load and every gold must still be right
+        run: uv run pytest -q evals/tests
+
+      - name: Re-score the recorded answers and hold the line
+        run: uv run evals gate
