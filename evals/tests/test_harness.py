@@ -221,6 +221,53 @@ def test_repair_asks_once_and_only_when_invalid(tmp_path):
     assert runner.one(ITEM, c).turns == 1 and right.calls == 1
 
 
+# -- ablating the briefing --------------------------------------------------
+
+
+@pytest.fixture(scope="module")
+def full_briefing(sales):
+    return conditions.get("briefing").preamble(sales)
+
+
+def test_removing_a_section_removes_only_that_section(full_briefing, sales):
+    shorter = conditions.get("minus:vega_lite").preamble(sales)
+    assert len(shorter) < len(full_briefing)
+    assert "## Vega-Lite spellings" not in shorter
+    assert "## Rules the validator enforces" in shorter
+
+
+def test_the_columns_can_be_ablated_like_a_section(full_briefing, sales):
+    without = conditions.get("minus:columns").preamble(sales)
+    assert "## The data" in full_briefing and "## The data" not in without
+
+
+def test_a_pair_can_be_removed_together(full_briefing, sales):
+    """Leave-one-out cannot see two sections that teach the same thing."""
+    pair = conditions.get("minus:shape,flat").preamble(sales)
+    assert len(pair) < min(len(conditions.get(f"minus:{s}").preamble(sales))
+                           for s in ("shape", "flat"))
+
+
+def test_only_keeps_what_it_names(sales):
+    kept = conditions.get("only:types,channels,rules").preamble(sales)
+    assert "## Chart types" in kept and "## The flat dialect" not in kept
+
+
+def test_an_ablation_that_empties_the_briefing_is_refused():
+    """`include=()` means every section to the briefing, so this would quietly
+    measure the whole document instead of none of it."""
+    with pytest.raises(KeyError, match="no sections"):
+        conditions.get("only:columns")
+    with pytest.raises(KeyError, match="no sections"):
+        conditions.get("minus:" + ",".join(conditions.ABLATABLE))
+
+
+@pytest.mark.parametrize("name", ["minus:nope", "only:", "briefing+nope"])
+def test_an_unknown_ablation_is_refused(name):
+    with pytest.raises(KeyError):
+        conditions.get(name)
+
+
 # -- the gate CI runs -------------------------------------------------------
 
 

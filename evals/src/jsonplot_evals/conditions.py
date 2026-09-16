@@ -14,6 +14,7 @@ from typing import Callable
 import pandas as pd
 
 from jsonplot import agent
+from jsonplot.spec.briefing import SECTION_NAMES, contract
 
 SYSTEM = ("You produce visualization contracts. Reply with one JSON object and "
           "nothing else: no prose, no markdown fence, no explanation.")
@@ -47,11 +48,60 @@ CONDITIONS: dict[str, Condition] = {
 }
 
 
+#: The DataFrame's columns are not one of the briefing's sections — they are
+#: prepended when a frame is passed — but they are ablatable like one, and the
+#: likeliest to be load-bearing. This names them.
+COLUMNS = "columns"
+
+ABLATABLE = (COLUMNS, *SECTION_NAMES)
+
+
 def get(name: str) -> Condition:
-    try:
+    """A named condition, or an ablation of the briefing.
+
+    `minus:vega_lite` is the briefing without that section; `minus:shape,flat`
+    without either, because leave-one-out cannot see two sections that teach the
+    same thing; `only:types,channels,rules` is the part the docstring of
+    `agent.context` claims is load-bearing, which is a claim worth testing.
+    """
+    if name in CONDITIONS:
         return CONDITIONS[name]
-    except KeyError:
-        raise KeyError(f"unknown condition {name!r}; available: {list(CONDITIONS)}") from None
+    for prefix, invert in (("minus:", True), ("only:", False)):
+        if name.startswith(prefix):
+            named = _named(name, name[len(prefix):])
+            chosen = tuple(s for s in ABLATABLE if (s in named) is not invert)
+            if not [s for s in chosen if s != COLUMNS]:
+                # `include=()` means "every section" to the briefing, so an
+                # ablation that removes them all would quietly measure the whole
+                # document instead. The columns on their own are `bare`.
+                raise KeyError(f"{name!r} leaves the briefing with no sections; "
+                               f"for the columns and nothing else, use 'bare'")
+            return Condition(name, _briefing(chosen))
+    raise KeyError(f"unknown condition {name!r}; available: {list(CONDITIONS)}, "
+                   f"or minus:/only: over {list(ABLATABLE)}")
+
+
+def _named(condition: str, listed: str) -> set[str]:
+    named = {s.strip() for s in listed.split(",") if s.strip()}
+    unknown = named - set(ABLATABLE)
+    if unknown or not named:
+        raise KeyError(f"{condition!r} names {sorted(unknown) or 'no'} section(s); "
+                       f"available: {list(ABLATABLE)}")
+    return named
+
+
+def _briefing(sections: tuple[str, ...]) -> Callable[[pd.DataFrame], str]:
+    """The briefing with only these parts of it."""
+    keep = tuple(s for s in sections if s != COLUMNS)
+
+    def preamble(df: pd.DataFrame) -> str:
+        if COLUMNS in sections:
+            return agent.context(df, sections=keep)
+        doc = contract(None, include=keep)       # the contract, with no data
+        assert isinstance(doc, str)
+        return doc
+
+    return preamble
 
 
 def first_turn(preamble: str, request: str) -> str:
