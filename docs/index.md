@@ -83,19 +83,22 @@ and document nothing. That page is [The contract](CONTRACT.md), and it is built
 fresh on every deploy of this site.
 
 It measurably helps. `uv run evals` runs twelve natural-language requests
-through a model and validates every contract that comes back:
+through a model and asks two things of every contract that comes back: does it
+validate, and does it draw the chart that was asked for?
 
-| Prompt | Correct outcomes |
-| --- | --- |
-| columns + a sentence naming the keys | 6 / 12 |
-| columns + "write me Vega-Lite" | 5 / 12 |
-| columns + the generated contract | 11 / 12 |
-| …plus one repair round | 11 / 12 |
+| Prompt | Right chart | Valid contract |
+| --- | --- | --- |
+| columns + a sentence naming the keys | 2 / 12 | 5 / 12 |
+| columns + "write me Vega-Lite" | 2 / 12 | 4 / 12 |
+| columns + the generated contract | 6 / 12 | 10 / 12 |
+| …plus one repair round | 5 / 12 | 12 / 12 |
 
 <small>`qwen2.5:7b-instruct` via Ollama, replayed from the answers recorded in
 `evals/runs/`. One request asks for a 3D surface, which this does not draw; a
-rejection is the correct outcome and is scored as one. The repair round fixes
-the other miss and loses that one, turning the surface into a valid scatter.</small>
+rejection is the right outcome and is scored as one. The repair round buys the
+last two invalid contracts and loses that rejection, turning the surface into a
+valid scatter: retrying until the validator is happy optimizes for the
+validator.</small>
 
 ## Where to go next
 

@@ -134,12 +134,16 @@ ollama serve &
 uv run evals --live          # ask qwen2.5:7b-instruct again
 ```
 
-| Prompt | Correct outcomes |
-| --- | --- |
-| columns + a sentence naming the flat keys | 6 / 12 |
-| columns + "write me Vega-Lite", translated by the dialect | 5 / 12 |
-| columns + the generated contract | 11 / 12 |
-| …plus one repair round | 11 / 12 |
+| Prompt | Right chart | Valid contract |
+| --- | --- | --- |
+| columns + a sentence naming the flat keys | 2 / 12 | 5 / 12 |
+| columns + "write me Vega-Lite", translated by the dialect | 2 / 12 | 4 / 12 |
+| columns + the generated contract | 6 / 12 | 10 / 12 |
+| …plus one repair round | 5 / 12 | 12 / 12 |
+
+A contract that validates is not yet the chart that was asked for: the eval
+compares the plot frame — chart type, columns per role, aggregation, rows — to a
+gold contract written by hand for each request.
 
 Accepting Vega-Lite's spelling is worth doing — it costs a lookup table and it
 means a contract in the dialect a model knows best does not die on vocabulary —

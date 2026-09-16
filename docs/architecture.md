@@ -84,12 +84,12 @@ exception is `$schema`, which names a spec language this is not.
 A condition in `uv run evals` asks the model for a Vega-Lite spec, says nothing
 at all about this framework, and lets the dialect translate:
 
-| Prompt | Correct outcomes |
-|---|---|
-| columns + a sentence naming the flat keys | 6 / 12 |
-| columns + "write me Vega-Lite" | 5 / 12 |
-| columns + the generated contract | 11 / 12 |
-| …plus one repair round | 11 / 12 |
+| Prompt | Right chart | Valid contract |
+|---|---|---|
+| columns + a sentence naming the flat keys | 2 / 12 | 5 / 12 |
+| columns + "write me Vega-Lite" | 2 / 12 | 4 / 12 |
+| columns + the generated contract | 6 / 12 | 10 / 12 |
+| …plus one repair round | 5 / 12 | 12 / 12 |
 
 So the dialect does **not** replace the briefing, and it was worth measuring
 rather than assuming. What is left failing in that column is not spelling — it
@@ -205,28 +205,37 @@ load-bearing ones are `types`, `channels` and `rules`.
 
 ### Whether it earns its size
 
-`uv run evals` runs twelve natural-language requests through a model and
-validates every contract that comes back. With qwen2.5:7b-instruct:
+`uv run evals` runs twelve natural-language requests through a model and asks
+two things of every contract that comes back: does it validate, and does it draw
+the chart that was asked for? The second is answered against a gold contract, by
+comparing plot frames — `build_frame` reduces any dialect to the rows that will
+be drawn, keyed by visual role, so the three spellings of one chart compare
+equal and a `sum` where a `mean` was asked for does not. With
+qwen2.5:7b-instruct:
 
-| Prompt | Correct outcomes |
-|---|---|
-| columns + a sentence naming the flat keys | 6 / 12 |
-| columns + the briefing | 11 / 12 |
-| ...plus one repair round | 11 / 12 |
+| Prompt | Right chart | Valid contract |
+|---|---|---|
+| columns + a sentence naming the flat keys | 2 / 12 | 5 / 12 |
+| columns + the briefing | 6 / 12 | 10 / 12 |
+| ...plus one repair round | 5 / 12 | 12 / 12 |
+
+The briefing moves both columns; the repair round moves only the second, which
+is the useful warning in the table. A loop that retries until the validator
+accepts is optimizing for the validator, and the last column is what that buys:
+two contracts fixed, and a request the framework should have refused turned into
+a valid chart of something else.
 
 One request asks for a 3D surface, which the framework does not draw; there a
-rejection is the correct outcome and is scored as such. A model is not
+rejection is the right outcome and is scored as such. A model is not
 deterministic across machines even at temperature 0, so the harness records
 every answer in `evals/runs/` (one JSONL per model, each answer keyed by the
 hash of the exact prompt that produced it) and scores the recording. Replaying
 needs no model; `--live` asks again wherever the prompt has changed.
 
-That recording is how a stale number got caught. The repair row read 12 / 12
-when the briefing gained its Vega-Lite section, and nobody re-ran the eval.
-Against the longer briefing the repair round still fixes the one invalid
-contract, but it also takes the rejected 3D surface and, shown the errors,
-turns it into a valid scatter: a repair loop that optimizes for passing the
-validator will launder a request it should refuse.
+That recording is how a stale number got caught. This page claimed 12 / 12 for
+the repair round until the briefing gained its Vega-Lite section and nobody
+re-ran the eval; replaying the recorded answers against the current briefing is
+what showed the number had moved.
 
 The first run of that eval is also what produced rule 5 in its current form.
 The briefing fixed every vocabulary error but left the model omitting

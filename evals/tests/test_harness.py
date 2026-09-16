@@ -41,12 +41,14 @@ def test_every_gold_contract_draws_on_its_frame(ds):
             assert len(jp.build_frame(gold, df)), item.id
 
 
-def test_every_check_is_met_by_every_gold(ds):
+def test_every_gold_scores_right_against_its_own_item(ds):
+    """The scorer's own integrity check: a gold answer has to score as right,
+    `check` included. A gold that does not is a gold that is wrong."""
     for item in ds.items:
+        df = frames.load(item.frame)
         for gold in item.gold:
-            resolved = jp.resolve(gold, frames.load(item.frame)).spec
-            for key, value in item.check.items():
-                assert getattr(resolved.style, key) == value, item.id
+            outcome = score(item, json.dumps(gold), df)
+            assert outcome.correct, (item.id, outcome.mismatches)
 
 
 def test_a_changed_frame_refuses_to_load(tmp_path, monkeypatch):
@@ -76,6 +78,76 @@ def test_a_rejected_impossible_request_is_the_right_outcome():
     item = Item(id="x", split="t", frame="sales", request="3D", expect="reject")
     outcome = score(item, '{"viz_type": "surface3d"}', frames.sales())
     assert not outcome.valid and outcome.scored
+
+
+# -- valid is not the same as right -----------------------------------------
+
+
+@pytest.fixture(scope="module")
+def sales():
+    return frames.sales()
+
+
+def item(ds, name):
+    return next(i for i in ds.items if i.id == name)
+
+
+def outcome_for(ds, name, contract, sales):
+    return score(item(ds, name), json.dumps(contract), sales)
+
+
+def test_the_same_chart_in_vega_lite_is_the_same_answer(ds, sales):
+    """Swapping the channels is how Vega-Lite spells a horizontal bar."""
+    got = outcome_for(ds, "readme.horizontal", {
+        "mark": "bar",
+        "encoding": {"x": {"field": "units", "type": "Q", "aggregate": "sum"},
+                     "y": {"field": "region", "type": "N"}},
+        "title": "Units"}, sales)
+    assert got.correct, got.mismatches
+
+
+def test_a_mean_where_a_sum_was_asked_for_is_valid_and_wrong(ds, sales):
+    got = outcome_for(ds, "readme.bar_simple", {
+        "viz_type": "bar", "x_axis": "region", "y_axis": "revenue", "agg": "mean"}, sales)
+    assert got.valid and not got.correct
+    assert "WRONG_AGGREGATE" in got.codes
+
+
+def test_a_missing_series_is_wrong(ds, sales):
+    got = outcome_for(ds, "readme.line_series", {
+        "viz_type": "line",
+        "encoding": {"x": {"field": "date", "time_unit": "month"},
+                     "y": {"field": "revenue", "aggregate": "sum"}}}, sales)
+    assert not got.correct and "WRONG_CHANNELS" in got.codes
+
+
+def test_how_many_bins_a_histogram_uses_is_not_semantics(ds, sales):
+    got = outcome_for(ds, "readme.hist", {
+        "viz_type": "hist", "encoding": {"x": {"field": "satisfaction", "bin": 30}}}, sales)
+    assert got.correct, got.mismatches
+
+
+def test_the_right_rows_in_the_wrong_order_is_wrong(ds, sales):
+    got = outcome_for(ds, "readme.bar_top_n", {
+        "viz_type": "bar",
+        "encoding": {"x": {"field": "region"}, "y": {"field": "revenue", "aggregate": "sum"}},
+        "data": {"sort": {"by": "y", "order": "asc"}, "limit": 3}}, sales)
+    assert not got.correct and "WRONG_ORDER" in got.codes
+
+
+def test_a_requested_title_is_checked(ds, sales):
+    got = outcome_for(ds, "readme.horizontal", {
+        "viz_type": "bar", "x_axis": "region", "y_axis": "units", "agg": "sum",
+        "orientation": "horizontal"}, sales)
+    assert not got.correct
+    assert [e["path"] for e in got.mismatches] == ["style.title"]
+
+
+def test_an_impossible_request_answered_with_a_valid_chart_is_wrong(ds, sales):
+    got = outcome_for(ds, "readme.impossible", {
+        "viz_type": "scatter",
+        "encoding": {"x": {"field": "price"}, "y": {"field": "units"}}}, sales)
+    assert got.valid and not got.scored and "ACCEPTED_IMPOSSIBLE" in got.codes
 
 
 # -- recording and replay ---------------------------------------------------
@@ -153,7 +225,7 @@ def test_repair_asks_once_and_only_when_invalid(tmp_path):
 
 
 def test_the_readme_table_is_what_the_recording_replays(capsys):
-    assert cli.main(["--quiet"]) == 0
+    assert cli.main(["--quiet", "--metric", "right"]) == 0
     table = capsys.readouterr().out.strip()
     readme = (ROOT.parent / "README.md").read_text(encoding="utf-8")
     assert table in readme, f"README.md no longer shows what `uv run evals` prints:\n{table}"

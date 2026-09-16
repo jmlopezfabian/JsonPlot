@@ -106,23 +106,37 @@ jp.tool_definition()                              # for tool-calling
 agent.context(df, sections=("types", "rules"))    # when the budget is tight
 ```
 
-It measurably helps. `uv run evals` puts twelve natural-language requests
-through a model under four prompts and validates what comes back:
+It measurably helps, and by less than a validator alone would tell you.
+`uv run evals` puts twelve natural-language requests through a model under four
+prompts and asks two questions of every answer. Does the contract validate?
+And does it draw the chart that was asked for — same chart type, same columns
+in the same roles, same aggregation, same rows?
+
+The chart that was asked for, or a rejection where nothing could be drawn:
 
 | model | bare | vega_lite | briefing | briefing+repair |
 | --- | ---: | ---: | ---: | ---: |
-| `qwen2.5:7b-instruct` | 6/12 | 5/12 | 11/12 | 11/12 |
+| `qwen2.5:7b-instruct` | 2/12 | 2/12 | 6/12 | 5/12 |
+
+A contract that merely passes `jp.validate`, whatever it draws:
+
+| model | bare | vega_lite | briefing | briefing+repair |
+| --- | ---: | ---: | ---: | ---: |
+| `qwen2.5:7b-instruct` | 5/12 | 4/12 | 10/12 | 12/12 |
 
 `bare` is the columns plus a sentence naming the flat keys; `vega_lite` asks for
 Vega-Lite and lets the dialect translate it; `briefing` is the generated
-contract; `briefing+repair` sends the validator's errors back once. One request
-asks for a 3D surface, which this does not draw, so there a rejection is the
-right outcome — and it is the one the repair round loses: shown the errors, the
-model turns the surface into a valid scatter nobody asked for.
+contract; `briefing+repair` sends the validator's errors back once.
 
-Every answer is recorded in `evals/runs/`, so the command replays the table
-above on a machine with no model installed, and a test fails when the two stop
-matching. To ask the model again:
+The briefing wins on both counts. The repair round only wins on the second one,
+and that is the warning: a loop that retries until the validator is happy
+optimizes for the validator. It fixes a contract, and it also takes the request
+for a 3D surface — which this cannot draw, so a rejection is the right outcome
+— and turns it into a perfectly valid scatter nobody asked for.
+
+Every answer is recorded in `evals/runs/`, so the command replays the tables
+above on a machine with no model installed, and a test fails when the first one
+stops matching. To ask the model again:
 
 ```bash
 ollama serve &

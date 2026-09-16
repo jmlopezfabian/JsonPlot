@@ -48,6 +48,8 @@ def main(argv: list[str] | None = None) -> int:
                       help="call the model for everything and record over the old answers")
     run.set_defaults(mode="replay")
     run.add_argument("--workers", type=int, default=1)
+    run.add_argument("--metric", choices=[*report.METRICS, "both"], default="both",
+                     help="which table to print (default: both)")
     run.add_argument("--out", type=Path, help="write the per-item detail here as JSON")
     run.add_argument("-q", "--quiet", action="store_true", help="only print the table")
     args = ap.parse_args(argv)
@@ -91,7 +93,11 @@ def _run(args) -> int:
             results.extend(got)
 
     stale = sum(r.stale for r in results)
-    print(report.table(results, [c.name for c in chosen]))
+    metrics = list(report.METRICS) if args.metric == "both" else [args.metric]
+    for n, metric in enumerate(metrics):
+        if len(metrics) > 1:
+            print(f"{'' if n == 0 else chr(10)}{report.HEADINGS[metric]}\n")
+        print(report.table(results, [c.name for c in chosen], metric))
     if stale:
         print(f"\n{stale} recorded answer(s) were given to a prompt that has since "
               "changed; run with --live to refresh them.")
