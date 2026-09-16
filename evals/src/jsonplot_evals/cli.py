@@ -15,7 +15,7 @@ import sys
 import tomllib
 from pathlib import Path
 
-from . import ROOT, conditions, dataset, report
+from . import ROOT, conditions, dataset, report, tracing
 from .providers import ProviderUnavailable, for_model
 from .runner import ReplayMiss, Runner
 from .store import Store
@@ -52,6 +52,10 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--workers", type=int, default=1)
     run.add_argument("--metric", choices=[*report.METRICS, "both"], default="both",
                      help="which table to print (default: both)")
+    run.add_argument("--trace", action="store_true",
+                     help="send the run to Langfuse (needs LANGFUSE_PUBLIC_KEY and "
+                          "LANGFUSE_SECRET_KEY). Off unless asked for: having the "
+                          "keys in the environment should not start shipping data")
     run.add_argument("--out", type=Path, help="write the per-item detail here as JSON")
     run.add_argument("-q", "--quiet", action="store_true", help="only print the table")
 
@@ -75,6 +79,9 @@ def _run(args) -> int:
     run_name = args.run or f"{ds.version}-baseline"
     # flushed: an overnight run writes to a file, and progress should show there
     say = (lambda *_: None) if args.quiet else (lambda *a: print(*a, flush=True))
+    traces = tracing.tracer(run_name, ds.version, enabled=args.trace)
+    if traces.enabled:
+        say(f"tracing to {tracing.host()}\n")
 
     results = []
     for model in args.model:
@@ -84,7 +91,7 @@ def _run(args) -> int:
             print(f"evals: {exc}", file=sys.stderr)
             return 2
         store = Store.for_run(run_name, model)
-        runner = Runner(provider, store, mode=args.mode)
+        runner = Runner(provider, store, mode=args.mode, tracer=traces)
         say(f"model {model} · dataset {ds.version} · {len(items)} items · "
             f"mode {args.mode} · recording {_shown(store.path)}\n")
         for condition in chosen:
@@ -104,6 +111,7 @@ def _run(args) -> int:
             say(report.condition_footer(got) + "\n")
             results.extend(got)
 
+    traces.flush()
     stale = sum(r.stale for r in results)
     metrics = list(report.METRICS) if args.metric == "both" else [args.metric]
     for n, metric in enumerate(metrics):

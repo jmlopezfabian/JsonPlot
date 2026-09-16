@@ -72,7 +72,7 @@ class Tracer:
         self._span: Any = None
 
     @contextmanager
-    def item(self, item: Item, condition: str, model: str) -> Iterator["Tracer"]:
+    def item(self, item: Item, condition: str, model: str) -> Iterator["_Handle"]:
         from langfuse import propagate_attributes
 
         tags = [f"run:{self.run}", f"dataset:{self.dataset}",
@@ -84,15 +84,21 @@ class Tracer:
                 name=f"{item.id} · {condition}",
                 input=item.request,
             ) as span:
-                self._span = span
-                try:
-                    yield self
-                finally:
-                    self._span = None
+                # a handle rather than `self`: items run concurrently, and a
+                # span kept on the tracer would be whichever thread wrote last
+                yield _Handle(span)
+
+    def flush(self) -> None:
+        self._client.flush()
+
+
+class _Handle:
+    """One item's trace, while it is open."""
+
+    def __init__(self, span: Any):
+        self._span = span
 
     def turn(self, record: Record, model: str, params: dict, user: str) -> None:
-        if self._span is None:
-            return
         usage = {k: v for k, v in (("input", record.input_tokens),
                                    ("output", record.output_tokens)) if v is not None}
         with self._span.start_as_current_generation(
@@ -105,8 +111,6 @@ class Tracer:
 
     def score(self, outcome: Outcome) -> None:
         """Three questions, in the order they stop mattering."""
-        if self._span is None:
-            return
         for name, value in (("parsed", outcome.parsed), ("valid", outcome.valid),
                             ("right", outcome.scored)):
             self._span.score(name=name, value=int(value), data_type="NUMERIC")
@@ -115,9 +119,6 @@ class Tracer:
             "errors": outcome.errors,
             "mismatches": outcome.mismatches,
         })
-
-    def flush(self) -> None:
-        self._client.flush()
 
 
 def tracer(run: str, dataset: str, enabled: bool | None = None):

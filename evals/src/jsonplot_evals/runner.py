@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
-from typing import Callable, Iterator, Literal
+from typing import Any, Callable, Iterator, Literal
 
 import pandas as pd
 
@@ -46,12 +46,14 @@ class Result:
 
 class Runner:
     def __init__(self, provider: Provider, store: Store, mode: Mode = "auto",
-                 frame_loader: Callable[[str], pd.DataFrame] | None = None):
-        from . import frames
+                 frame_loader: Callable[[str], pd.DataFrame] | None = None,
+                 tracer: Any = None):
+        from . import frames, tracing
 
         self.provider = provider
         self.store = store
         self.mode = mode
+        self.tracer = tracer or tracing.NullTracer()
         self._load = frame_loader or frames.load
         self._frames: dict[str, pd.DataFrame] = {}
         self._preambles: dict[tuple[str, str], str] = {}
@@ -81,23 +83,29 @@ class Runner:
         stale = called = 0
         seconds = 0.0
 
-        def ask(turn: int, user: str) -> Record:
-            nonlocal stale, called, seconds
-            rec, was_stale, was_called = self._answer(item, condition, turn, user)
-            stale += was_stale
-            called += was_called
-            seconds += rec.seconds
-            return rec
+        with self.tracer.item(item, condition.name, self.provider.model) as trace:
 
-        rec = ask(0, cond.first_turn(preamble, item.request))
-        outcome = score(item, rec.raw, df)
-        turns = 1
-        if condition.repair and outcome.parsed and not outcome.valid:
-            follow = cond.repair_turn(preamble, item.request, outcome.spec, outcome.errors)
-            repaired = score(item, ask(1, follow).raw, df)
-            turns = 2
-            if repaired.parsed:
-                outcome = repaired
+            def ask(turn: int, user: str) -> Record:
+                nonlocal stale, called, seconds
+                rec, was_stale, was_called = self._answer(item, condition, turn, user)
+                stale += was_stale
+                called += was_called
+                seconds += rec.seconds
+                trace.turn(rec, self.provider.model, self.provider.params, user)
+                return rec
+
+            rec = ask(0, cond.first_turn(preamble, item.request))
+            outcome = score(item, rec.raw, df)
+            turns = 1
+            if condition.repair and outcome.parsed and not outcome.valid:
+                follow = cond.repair_turn(preamble, item.request, outcome.spec,
+                                          outcome.errors)
+                repaired = score(item, ask(1, follow).raw, df)
+                turns = 2
+                if repaired.parsed:
+                    outcome = repaired
+            trace.score(outcome)
+
         return Result(item, condition.name, self.provider.model, outcome, turns,
                       seconds, stale, called)
 
