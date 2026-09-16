@@ -1,0 +1,12 @@
+# The floor `uv run evals gate` holds, in right outcomes over dataset v1's 144
+# requests. Scoring a recording is deterministic, so these do not drift on their
+# own: they move when the framework changes what a contract means, which is
+# exactly what the gate is watching for. A few points of slack below the
+# measured number, so that a single item changing its mind is a review comment
+# rather than a broken build.
+#
+# Measured 2026-09-16 with qwen2.5:7b-instruct: briefing 75, briefing+repair 78.
+
+[v1-baseline."qwen2.5:7b-instruct"]
+briefing = 72
+"briefing+repair" = 75

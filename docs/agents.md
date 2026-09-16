@@ -124,9 +124,10 @@ notebook, run against a local model and committed with its output:
 
 ## Does it work?
 
-`uv run evals` puts twelve natural-language requests through a model and
-validates every contract that comes back. Every answer is recorded in
-`evals/runs/`, so without `--live` it replays them and needs no model.
+`uv run evals` puts 144 natural-language requests, over three DataFrames,
+through a model and scores every contract that comes back. Every answer is
+recorded in `evals/runs/`, so without `--live` it replays them and needs no
+model.
 
 ```bash
 uv run evals                 # replay the recorded answers
@@ -136,10 +137,10 @@ uv run evals --live          # ask qwen2.5:7b-instruct again
 
 | Prompt | Right chart | Valid contract |
 | --- | --- | --- |
-| columns + a sentence naming the flat keys | 2 / 12 | 5 / 12 |
-| columns + "write me Vega-Lite", translated by the dialect | 2 / 12 | 4 / 12 |
-| columns + the generated contract | 6 / 12 | 10 / 12 |
-| …plus one repair round | 5 / 12 | 12 / 12 |
+| columns + a sentence naming the flat keys | 30 / 144 | 51 / 144 |
+| columns + "write me Vega-Lite", translated by the dialect | 43 / 144 | 46 / 144 |
+| columns + the generated contract | 75 / 144 | 112 / 144 |
+| …plus one repair round | 78 / 144 | 123 / 144 |
 
 A contract that validates is not yet the chart that was asked for: the eval
 compares the plot frame — chart type, columns per role, aggregation, rows — to a

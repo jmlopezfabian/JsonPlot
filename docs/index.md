@@ -82,22 +82,23 @@ Add a chart type and it appears in the next prompt. A test fails if you add one
 and document nothing. That page is [The contract](CONTRACT.md), and it is built
 fresh on every deploy of this site.
 
-It measurably helps. `uv run evals` runs twelve natural-language requests
-through a model and asks two things of every contract that comes back: does it
-validate, and does it draw the chart that was asked for?
+It measurably helps. `uv run evals` runs 144 natural-language requests, over
+three DataFrames, through a model, and asks two things of every contract that
+comes back: does it validate, and does it draw the chart that was asked for?
 
 | Prompt | Right chart | Valid contract |
 | --- | --- | --- |
-| columns + a sentence naming the keys | 2 / 12 | 5 / 12 |
-| columns + "write me Vega-Lite" | 2 / 12 | 4 / 12 |
-| columns + the generated contract | 6 / 12 | 10 / 12 |
-| …plus one repair round | 5 / 12 | 12 / 12 |
+| columns + a sentence naming the keys | 30 / 144 | 51 / 144 |
+| columns + "write me Vega-Lite" | 43 / 144 | 46 / 144 |
+| columns + the generated contract | 75 / 144 | 112 / 144 |
+| …plus one repair round | 78 / 144 | 123 / 144 |
 
 <small>`qwen2.5:7b-instruct` via Ollama, replayed from the answers recorded in
-`evals/runs/`. One request asks for a 3D surface, which this does not draw; a
-rejection is the right outcome and is scored as one. The repair round buys the
-last two invalid contracts and loses that rejection, turning the surface into a
-valid scatter: retrying until the validator is happy optimizes for the
+`evals/runs/`. Seventeen requests ask for something this cannot draw — a 3D
+surface, one bar for each of 1200 respondents — and there a rejection is the
+right outcome and is scored as one. The last row is why both columns are shown:
+one repair round buys eleven contracts that validate and three that are right,
+because retrying until the validator is happy optimizes for the
 validator.</small>
 
 ## Where to go next

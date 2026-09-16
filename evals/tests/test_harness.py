@@ -353,7 +353,7 @@ def test_the_gate_passes_when_the_recording_still_holds(monkeypatch, tmp_path, d
 
 
 def test_the_readme_table_is_what_the_recording_replays(capsys):
-    assert cli.main(["--quiet", "--metric", "right"]) == 0
+    assert cli.main(["--quiet", "--metric", "right", "--split", "readme", "core"]) == 0
     table = capsys.readouterr().out.strip()
     readme = (ROOT.parent / "README.md").read_text(encoding="utf-8")
     assert table in readme, f"README.md no longer shows what `uv run evals` prints:\n{table}"

@@ -86,10 +86,10 @@ at all about this framework, and lets the dialect translate:
 
 | Prompt | Right chart | Valid contract |
 |---|---|---|
-| columns + a sentence naming the flat keys | 2 / 12 | 5 / 12 |
-| columns + "write me Vega-Lite" | 2 / 12 | 4 / 12 |
-| columns + the generated contract | 6 / 12 | 10 / 12 |
-| …plus one repair round | 5 / 12 | 12 / 12 |
+| columns + a sentence naming the flat keys | 30 / 144 | 51 / 144 |
+| columns + "write me Vega-Lite" | 43 / 144 | 46 / 144 |
+| columns + the generated contract | 75 / 144 | 112 / 144 |
+| …plus one repair round | 78 / 144 | 123 / 144 |
 
 So the dialect does **not** replace the briefing, and it was worth measuring
 rather than assuming. What is left failing in that column is not spelling — it
@@ -205,9 +205,9 @@ load-bearing ones are `types`, `channels` and `rules`.
 
 ### Whether it earns its size
 
-`uv run evals` runs twelve natural-language requests through a model and asks
-two things of every contract that comes back: does it validate, and does it draw
-the chart that was asked for? The second is answered against a gold contract, by
+`uv run evals` runs 144 natural-language requests, over three DataFrames,
+through a model and asks two things of every contract that comes back: does it
+validate, and does it draw the chart that was asked for? The second is answered against a gold contract, by
 comparing plot frames — `build_frame` reduces any dialect to the rows that will
 be drawn, keyed by visual role, so the three spellings of one chart compare
 equal and a `sum` where a `mean` was asked for does not. With
@@ -215,15 +215,17 @@ qwen2.5:7b-instruct:
 
 | Prompt | Right chart | Valid contract |
 |---|---|---|
-| columns + a sentence naming the flat keys | 2 / 12 | 5 / 12 |
-| columns + the briefing | 6 / 12 | 10 / 12 |
-| ...plus one repair round | 5 / 12 | 12 / 12 |
+| columns + a sentence naming the flat keys | 30 / 144 | 51 / 144 |
+| columns + the briefing | 75 / 144 | 112 / 144 |
+| ...plus one repair round | 78 / 144 | 123 / 144 |
 
-The briefing moves both columns; the repair round moves only the second, which
-is the useful warning in the table. A loop that retries until the validator
-accepts is optimizing for the validator, and the last column is what that buys:
-two contracts fixed, and a request the framework should have refused turned into
-a valid chart of something else.
+The briefing moves both columns. The repair round moves them by very different
+amounts — eleven contracts that validate, three that are right — and that gap is
+the useful warning in the table: a loop that retries until the validator accepts
+is optimizing for the validator, so most of what it buys is a contract that
+draws the wrong chart convincingly. On a twelve-request version of this eval the
+same round came out slightly negative, which is the other lesson: twelve
+requests could not tell these two numbers apart.
 
 One request asks for a 3D surface, which the framework does not draw; there a
 rejection is the right outcome and is scored as such. A model is not

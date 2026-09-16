@@ -107,32 +107,35 @@ agent.context(df, sections=("types", "rules"))    # when the budget is tight
 ```
 
 It measurably helps, and by less than a validator alone would tell you.
-`uv run evals` puts twelve natural-language requests through a model under four
-prompts and asks two questions of every answer. Does the contract validate?
-And does it draw the chart that was asked for — same chart type, same columns
-in the same roles, same aggregation, same rows?
+`uv run evals` puts 144 natural-language requests, over three DataFrames,
+through a model under four prompts, and asks two questions of every answer.
+Does the contract validate? And does it draw the chart that was asked for —
+same chart type, same columns in the same roles, same aggregation, same rows?
 
 The chart that was asked for, or a rejection where nothing could be drawn:
 
 | model | bare | vega_lite | briefing | briefing+repair |
 | --- | ---: | ---: | ---: | ---: |
-| `qwen2.5:7b-instruct` | 2/12 | 2/12 | 6/12 | 5/12 |
+| `qwen2.5:7b-instruct` | 30/144 | 43/144 | 75/144 | 78/144 |
 
 A contract that merely passes `jp.validate`, whatever it draws:
 
 | model | bare | vega_lite | briefing | briefing+repair |
 | --- | ---: | ---: | ---: | ---: |
-| `qwen2.5:7b-instruct` | 5/12 | 4/12 | 10/12 | 12/12 |
+| `qwen2.5:7b-instruct` | 51/144 | 46/144 | 112/144 | 123/144 |
 
 `bare` is the columns plus a sentence naming the flat keys; `vega_lite` asks for
 Vega-Lite and lets the dialect translate it; `briefing` is the generated
 contract; `briefing+repair` sends the validator's errors back once.
 
-The briefing wins on both counts. The repair round only wins on the second one,
-and that is the warning: a loop that retries until the validator is happy
-optimizes for the validator. It fixes a contract, and it also takes the request
-for a 3D surface — which this cannot draw, so a rejection is the right outcome
-— and turns it into a perfectly valid scatter nobody asked for.
+Read the two tables together. The briefing is worth about as much as it looks
+on the second one and rather less on the first, and the repair round is where
+they come apart: it buys eleven contracts that validate and three that are
+right. Most of what a repair loop fixes is a contract that still draws the wrong
+chart, because a loop that retries until the validator is happy is optimizing
+for the validator. Seventeen of the requests cannot be drawn at all — a 3D
+surface, one bar per respondent — and there a refusal is the right answer, which
+is the other thing the second table cannot see.
 
 Every answer is recorded in `evals/runs/`, so the command replays the tables
 above on a machine with no model installed, and a test fails when the first one
