@@ -79,5 +79,14 @@ class Store:
                 fh.write(json.dumps(asdict(record), ensure_ascii=False) + "\n")
             self._records[record.key] = record
 
+    def conditions(self) -> list[str]:
+        """Which conditions this recording actually holds.
+
+        Read rather than assumed: an ablation run carries whatever was asked
+        for — single sections, pairs, an `only:` — and a report that iterates a
+        fixed list silently omits the rest.
+        """
+        return sorted({condition for _, condition, _ in self._records})
+
     def __len__(self) -> int:
         return len(self._records)

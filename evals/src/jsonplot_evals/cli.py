@@ -225,18 +225,20 @@ def _ablation(args) -> int:
               f"compare against", file=sys.stderr)
         return 3
 
-    whole = conditions.get("briefing").preamble(frames.load(args.frame))
+    frame = frames.load(args.frame)
+    whole = conditions.get("briefing").preamble(frame)
     rows = []
-    for section in conditions.ABLATABLE:
-        without = outcomes(ablation, f"minus:{section}")
+    for name in ablation.conditions():
+        if not name.startswith(("minus:", "only:")):
+            continue
+        without = outcomes(ablation, name)
         if without is None:
             continue
         lost, gained, p = report.mcnemar(full, without)
         rows.append({
-            "section": section, "delta": gained - lost, "lost": lost, "gained": gained,
-            "p": p,
-            "chars": len(whole) - len(conditions.get(f"minus:{section}").preamble(
-                frames.load(args.frame))),
+            "section": name.split(":", 1)[1] if name.startswith("minus:") else name,
+            "delta": gained - lost, "lost": lost, "gained": gained, "p": p,
+            "chars": len(whole) - len(conditions.get(name).preamble(frame)),
         })
     if not rows:
         print(f"evals: {ablation.path} holds no minus: conditions to compare",
