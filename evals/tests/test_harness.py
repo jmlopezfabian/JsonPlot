@@ -7,7 +7,7 @@ import json
 import pytest
 
 import jsonplot as jp
-from jsonplot_evals import ROOT, cli, conditions, dataset, frames, tracing
+from jsonplot_evals import ROOT, cli, conditions, dataset, frames, report, tracing
 from jsonplot_evals.dataset import Item
 from jsonplot_evals.providers import Completion, for_model
 from jsonplot_evals.runner import ReplayMiss, Runner
@@ -291,6 +291,44 @@ def test_asking_for_tracing_without_keys_is_an_error(no_langfuse):
     """Silently not tracing a run someone asked to trace wastes the run."""
     with pytest.raises(RuntimeError, match="LANGFUSE_PUBLIC_KEY"):
         tracing.tracer("v1-baseline", "v1", enabled=True)
+
+
+# -- the statistics the ablation rests on -----------------------------------
+
+
+def flips(lost: int, gained: int, same: int = 0):
+    """Two conditions over the same items, differing in exactly this way."""
+    full, ablated = {}, {}
+    for n in range(lost):
+        full[f"lost{n}"], ablated[f"lost{n}"] = True, False
+    for n in range(gained):
+        full[f"gained{n}"], ablated[f"gained{n}"] = False, True
+    for n in range(same):
+        full[f"same{n}"], ablated[f"same{n}"] = True, True
+    return full, ablated
+
+
+def test_a_section_that_changes_nothing_is_not_evidence():
+    full, ablated = flips(0, 0, same=144)
+    assert report.mcnemar(full, ablated) == (0, 0, 1.0)
+
+
+def test_an_even_split_is_not_evidence():
+    """Eight requests lost and nine gained is what noise looks like."""
+    lost, gained, p = report.mcnemar(*flips(8, 9))
+    assert (lost, gained) == (8, 9) and p == 1.0
+
+
+def test_a_lopsided_split_is_evidence():
+    lost, gained, p = report.mcnemar(*flips(40, 4))
+    assert (lost, gained) == (40, 4) and p < 0.0001
+
+
+def test_the_verdict_needs_both_a_direction_and_a_p_value():
+    assert report.verdict(-36, 0.0000, 0.0042) == "pays its rent"
+    assert report.verdict(+10, 0.0001, 0.0042) == "gets in the way"
+    # significant on its own, not once the level is split across the sections
+    assert report.verdict(-9, 0.049, 0.0042) == "noise"
 
 
 # -- the gate CI runs -------------------------------------------------------
