@@ -236,7 +236,7 @@ def _ablation(args) -> int:
             continue
         lost, gained, p = report.mcnemar(full, without)
         rows.append({
-            "section": name.split(":", 1)[1] if name.startswith("minus:") else name,
+            "section": name,
             "delta": gained - lost, "lost": lost, "gained": gained, "p": p,
             "chars": len(whole) - len(conditions.get(name).preamble(frame)),
         })

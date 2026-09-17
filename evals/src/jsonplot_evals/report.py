@@ -97,14 +97,16 @@ def verdict(delta: int, p: float, alpha: float) -> str:
 
 def ablation_table(rows: list[dict], alpha: float) -> str:
     """One line per section, least surprising last."""
-    lines = [f"{'section removed':<14} {'Δ right':>8} {'lost':>5} {'gained':>7} {'p':>8} "
-             f"{'chars':>6} {'per 1k':>7}  verdict",
-             "-" * 78]
+    # named in full: `minus:flat` drops one section, `only:…` drops everything
+    # else, and calling both of them "the section removed" would misread the row
+    lines = [f"{'condition':<26} {'Δ right':>8} {'lost':>5} {'gained':>7} {'p':>8} "
+             f"{'chars cut':>10} {'per 1k':>7}  verdict",
+             "-" * 96]
     for row in sorted(rows, key=lambda r: r["p"]):
         rent = -row["delta"] / (row["chars"] / 1000) if row["chars"] else 0.0
         lines.append(
-            f"{row['section']:<14} {row['delta']:>+8} {row['lost']:>5} {row['gained']:>7} "
-            f"{row['p']:>8.4f} {row['chars']:>6} {rent:>7.1f}  "
+            f"{row['section']:<26} {row['delta']:>+8} {row['lost']:>5} {row['gained']:>7} "
+            f"{row['p']:>8.4f} {row['chars']:>10} {rent:>7.1f}  "
             f"{verdict(row['delta'], row['p'], alpha)}")
     return "\n".join(lines)
 
