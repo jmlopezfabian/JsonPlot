@@ -179,10 +179,13 @@ def _gate(args) -> int:
             state = "ok  "
             if stale:
                 state = "STALE"
+                # records, not requests: a repair condition answers twice for
+                # the requests it has to fix, so this can exceed the item count
                 failures.append(
-                    f"{model} · {condition.name}: {stale} of {len(got)} answers were "
-                    f"given to a prompt that has since changed. The briefing moved and "
-                    f"the eval was not re-run: `uv run evals run --live --fresh`.")
+                    f"{model} · {condition.name}: {stale} recorded answer(s) across "
+                    f"{len(got)} requests were given to a prompt that has since "
+                    f"changed. The briefing moved and the eval was not re-run: "
+                    f"`uv run evals run --live --fresh`.")
             elif floor is not None and right < floor:
                 state = "UNDER"
                 failures.append(f"{model} · {condition.name}: {right}/{len(got)} right, "

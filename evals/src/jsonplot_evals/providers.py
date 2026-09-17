@@ -37,11 +37,21 @@ class Provider(Protocol):
 class Ollama:
     name = "ollama"
 
-    def __init__(self, model: str, url: str = OLLAMA, timeout: int = 180):
+    #: Ollama truncates a prompt longer than the context window without saying
+    #: so, which stops measuring the briefing and starts measuring its first N
+    #: tokens. The default is 4096; the briefing is ~3.9k tokens, so one model
+    #: fit by two hundred tokens and the next one silently did not — 110 of its
+    #: 144 answers came back empty. Set it high enough that the prompt is what
+    #: was written, and record it in `params` so a run with a different window
+    #: is a different condition rather than the same number.
+    CONTEXT = 8192
+
+    def __init__(self, model: str, url: str = OLLAMA, timeout: int = 180,
+                 num_ctx: int = CONTEXT):
         self.model = model
         self.url = url
         self.timeout = timeout
-        self.params = {"format": "json", "temperature": 0}
+        self.params = {"format": "json", "temperature": 0, "num_ctx": num_ctx}
 
     def complete(self, system: str, user: str) -> Completion:
         payload = json.dumps({
@@ -50,7 +60,8 @@ class Ollama:
                          {"role": "user", "content": user}],
             "stream": False,
             "format": self.params["format"],
-            "options": {"temperature": self.params["temperature"]},
+            "options": {"temperature": self.params["temperature"],
+                        "num_ctx": self.params["num_ctx"]},
         }).encode()
         req = urllib.request.Request(self.url, payload,
                                      {"Content-Type": "application/json"})
