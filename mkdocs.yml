@@ -59,6 +59,8 @@ nav:
       - Driving it from an agent: agents.md
       - The contract: CONTRACT.md
       - A Pydantic AI agent: notebook.ipynb
+  - Measured:
+      - What pays the rent: blog/paying-the-rent.md
   - Reference:
       - Python API: api.md
       - Errors: errors.md
