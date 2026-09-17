@@ -12,7 +12,7 @@ from jsonplot_evals.dataset import Item
 from jsonplot_evals.providers import Completion, for_model
 from jsonplot_evals.runner import ReplayMiss, Runner
 from jsonplot_evals.score import as_json, score
-from jsonplot_evals.store import Store
+from jsonplot_evals.store import Record, Store
 
 #: The twelve requests the README's numbers were first measured on.
 LEGACY_TASKS = {"bar_simple", "bar_top_n", "line_time", "line_series", "scatter",
@@ -291,6 +291,17 @@ def test_asking_for_tracing_without_keys_is_an_error(no_langfuse):
     """Silently not tracing a run someone asked to trace wastes the run."""
     with pytest.raises(RuntimeError, match="LANGFUSE_PUBLIC_KEY"):
         tracing.tracer("v1-baseline", "v1", enabled=True)
+
+
+def test_a_recording_lists_the_conditions_it_holds(tmp_path):
+    """The ablation report reads this to decide what to compare: a condition
+    missing from it is omitted from the table without saying so."""
+    store = Store(tmp_path / "rec.jsonl")
+    for condition in ("minus:flat", "only:types,channels,rules", "minus:flat"):
+        store.put(Record(item="i", condition=condition, turn=0, provider="p",
+                         model="m", prompt_sha="abc", raw="{}", input_tokens=1,
+                         output_tokens=1, seconds=0.0, recorded_at="now"))
+    assert store.conditions() == ["minus:flat", "only:types,channels,rules"]
 
 
 # -- the statistics the ablation rests on -----------------------------------
