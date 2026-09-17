@@ -68,8 +68,26 @@ def main(argv: list[str] | None = None) -> int:
     gate.add_argument("--run", default=None)
     gate.add_argument("--thresholds", type=Path, default=THRESHOLDS)
 
+    abl = sub.add_parser("ablation",
+                         help="what each section of the briefing is paying for")
+    abl.add_argument("--dataset", default="v1")
+    abl.add_argument("--split", nargs="*", default=["readme", "core"])
+    abl.add_argument("--model", default=DEFAULT_MODEL)
+    abl.add_argument("--run", default=None, help="recording of the minus: conditions")
+    abl.add_argument("--baseline-run", default=None,
+                     help="recording holding the full briefing to compare against")
+    abl.add_argument("--frame", default="sales",
+                     help="the frame whose briefing sizes the sections")
+    abl.add_argument("--alpha", type=float, default=None,
+                     help="significance level (default: 0.05 split over the number "
+                          "of sections compared)")
+
     args = ap.parse_args(argv)
-    return _gate(args) if args.command == "gate" else _run(args)
+    if args.command == "gate":
+        return _gate(args)
+    if args.command == "ablation":
+        return _ablation(args)
+    return _run(args)
 
 
 def _run(args) -> int:
@@ -176,6 +194,64 @@ def _gate(args) -> int:
         print("\n" + "\n".join(f"· {f}" for f in failures), file=sys.stderr)
         return 1
     print("\nthe recorded answers still hold.")
+    return 0
+
+
+def _ablation(args) -> int:
+    """Score the briefing minus each section against the whole briefing.
+
+    Nothing is called: both sides are replayed from their recordings, so this
+    reads the same every time and can be re-run against a changed framework.
+    """
+    from . import frames
+
+    ds = dataset.load(args.dataset)
+    items = ds.select(splits=args.split)
+    provider = for_model(args.model)
+    ablation = Store.for_run(args.run or f"{ds.version}-ablation", args.model)
+    baseline = Store.for_run(args.baseline_run or f"{ds.version}-baseline", args.model)
+
+    def outcomes(store: Store, condition: str) -> dict[str, bool] | None:
+        runner = Runner(provider, store, mode="replay")
+        try:
+            return {r.item.id: r.outcome.scored
+                    for r in runner.run(items, conditions.get(condition))}
+        except ReplayMiss:
+            return None
+
+    full = outcomes(baseline, "briefing")
+    if full is None:
+        print(f"evals: {baseline.path} has no recording of the whole briefing to "
+              f"compare against", file=sys.stderr)
+        return 3
+
+    whole = conditions.get("briefing").preamble(frames.load(args.frame))
+    rows = []
+    for section in conditions.ABLATABLE:
+        without = outcomes(ablation, f"minus:{section}")
+        if without is None:
+            continue
+        lost, gained, p = report.mcnemar(full, without)
+        rows.append({
+            "section": section, "delta": gained - lost, "lost": lost, "gained": gained,
+            "p": p,
+            "chars": len(whole) - len(conditions.get(f"minus:{section}").preamble(
+                frames.load(args.frame))),
+        })
+    if not rows:
+        print(f"evals: {ablation.path} holds no minus: conditions to compare",
+              file=sys.stderr)
+        return 3
+
+    # Twelve comparisons against one baseline: without splitting the level, one
+    # section in twenty looks load-bearing by chance alone.
+    alpha = args.alpha if args.alpha is not None else 0.05 / len(rows)
+    print(f"{args.model} · dataset {ds.version} · {len(items)} requests\n"
+          f"the whole briefing: {sum(full.values())}/{len(items)} right, "
+          f"{len(whole)} chars\n"
+          f"significance: p < {alpha:.4f} "
+          f"({'given' if args.alpha is not None else f'0.05 over {len(rows)} sections'})\n")
+    print(report.ablation_table(rows, alpha))
     return 0
 
 
