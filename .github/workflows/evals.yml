@@ -30,4 +30,4 @@ jobs:
         run: uv run pytest -q evals/tests
 
       - name: Re-score the recorded answers and hold the line
-        run: uv run evals gate
+        run: uv run evals gate --model qwen2.5:7b-instruct gemma4:e4b llama3.2:3b

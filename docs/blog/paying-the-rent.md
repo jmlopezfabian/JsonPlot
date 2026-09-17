@@ -148,6 +148,41 @@ and nothing in the test suite would have caught it. The context window is now
 part of the recorded conditions, so a run with a different window is a different
 number rather than the same one.
 
+## Three models, measured properly
+
+With the window set wide enough to answer in, the same 144 requests across three
+local models:
+
+| model | columns only | Vega-Lite | briefing | +repair |
+| --- | ---: | ---: | ---: | ---: |
+| `qwen2.5:7b-instruct` | 30 | 43 | **75** | 77 |
+| `gemma4:e4b` | 28 | 19 | **91** | 93 |
+| `llama3.2:3b` | 17 | 17 | **34** | 33 |
+
+<small>Right charts out of 144. Validity, in the same order: 51/46/112/125,
+52/3/116/133, 0/0/106/111.</small>
+
+Three things in that table are worth more than the ranking.
+
+**The document changes the ranking.** Without it, qwen and gemma4 are level (30
+and 28) and you would call them equivalent. With it, gemma4 is sixteen requests
+ahead. Benchmarking models on a bare prompt would have told you the wrong thing
+about which one to ship.
+
+**17 is not a score.** `llama3.2:3b` scores exactly 17 from the columns alone,
+and the dataset has exactly 17 requests that cannot be drawn. It never once drew
+the right chart; it scored only where failing was correct. The answers are not
+garbage, which is the interesting part — they are clean JSON in a schema it
+invented, `"viz_type": "bar_chart"` with `x_axis` as an object instead of a
+column name. Plausible, well-formed, and unusable in every single case. A schema
+in the prompt takes it from 0 valid contracts to 106.
+
+**Validity flatters the weak model most.** `llama3.2:3b` reaches 106 valid
+contracts and 34 right ones: three quarters of what passes the validator draws
+the wrong chart. The gap between the two columns is not a constant — it widens
+as the model gets weaker, which is exactly when you are most likely to be
+relying on the validator to tell you things are fine.
+
 ## What to take from this
 
 - **Name the things the model has to copy exactly.** Column names, enum values,

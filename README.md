@@ -117,12 +117,16 @@ The chart that was asked for, or a rejection where nothing could be drawn:
 | model | bare | vega_lite | briefing | briefing+repair |
 | --- | ---: | ---: | ---: | ---: |
 | `qwen2.5:7b-instruct` | 30/144 | 43/144 | 75/144 | 77/144 |
+| `gemma4:e4b` | 28/144 | 19/144 | 91/144 | 93/144 |
+| `llama3.2:3b` | 17/144 | 17/144 | 34/144 | 33/144 |
 
 A contract that merely passes `jp.validate`, whatever it draws:
 
 | model | bare | vega_lite | briefing | briefing+repair |
 | --- | ---: | ---: | ---: | ---: |
 | `qwen2.5:7b-instruct` | 51/144 | 46/144 | 112/144 | 125/144 |
+| `gemma4:e4b` | 52/144 | 3/144 | 116/144 | 133/144 |
+| `llama3.2:3b` | 0/144 | 0/144 | 106/144 | 111/144 |
 
 `bare` is the columns plus a sentence naming the flat keys; `vega_lite` asks for
 Vega-Lite and lets the dialect translate it; `briefing` is the generated

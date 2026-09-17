@@ -5,8 +5,18 @@
 # measured number, so that a single item changing its mind is a review comment
 # rather than a broken build.
 #
-# Measured 2026-09-16 with qwen2.5:7b-instruct: briefing 75, briefing+repair 78.
+# Measured 2026-09-17, all three at a context window of 8192 — at ollama's
+# default of 4096 the briefing leaves gemma4 twenty-five tokens to answer in and
+# its score is a measurement of the ceiling, not of the model.
 
 [v1-baseline."qwen2.5:7b-instruct"]
 briefing = 72
-"briefing+repair" = 75
+"briefing+repair" = 74
+
+[v1-baseline."gemma4:e4b"]
+briefing = 88
+"briefing+repair" = 90
+
+[v1-baseline."llama3.2:3b"]
+briefing = 31
+"briefing+repair" = 30
