@@ -101,6 +101,10 @@ one repair round buys thirteen contracts that validate and two that are right,
 because retrying until the validator is happy optimizes for the
 validator.</small>
 
+Which part of that document is doing the work is a separate question, and a
+measurable one: of its 12,530 characters, exactly one section survives a
+significance test. [What pays the rent](blog/paying-the-rent.md).
+
 ## Where to go next
 
 <div class="grid cards" markdown>

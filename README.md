@@ -2,7 +2,7 @@
 
 A JSON contract and a `DataFrame` go in; a matplotlib figure comes out.
 
-**[Documentation →](https://jmlopezfabian.github.io/JsonPlot/)** · [gallery](https://jmlopezfabian.github.io/JsonPlot/gallery/) · [the contract](https://jmlopezfabian.github.io/JsonPlot/CONTRACT/) · [agents](https://jmlopezfabian.github.io/JsonPlot/agents/)
+**[Documentation →](https://jmlopezfabian.github.io/JsonPlot/)** · [gallery](https://jmlopezfabian.github.io/JsonPlot/gallery/) · [the contract](https://jmlopezfabian.github.io/JsonPlot/CONTRACT/) · [agents](https://jmlopezfabian.github.io/JsonPlot/agents/) · [what pays the rent](https://jmlopezfabian.github.io/JsonPlot/blog/paying-the-rent/)
 
 ```python
 import jsonplot as jp
