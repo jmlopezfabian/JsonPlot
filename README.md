@@ -116,13 +116,13 @@ The chart that was asked for, or a rejection where nothing could be drawn:
 
 | model | bare | vega_lite | briefing | briefing+repair |
 | --- | ---: | ---: | ---: | ---: |
-| `qwen2.5:7b-instruct` | 30/144 | 43/144 | 75/144 | 78/144 |
+| `qwen2.5:7b-instruct` | 30/144 | 43/144 | 75/144 | 77/144 |
 
 A contract that merely passes `jp.validate`, whatever it draws:
 
 | model | bare | vega_lite | briefing | briefing+repair |
 | --- | ---: | ---: | ---: | ---: |
-| `qwen2.5:7b-instruct` | 51/144 | 46/144 | 112/144 | 123/144 |
+| `qwen2.5:7b-instruct` | 51/144 | 46/144 | 112/144 | 125/144 |
 
 `bare` is the columns plus a sentence naming the flat keys; `vega_lite` asks for
 Vega-Lite and lets the dialect translate it; `briefing` is the generated
@@ -130,7 +130,7 @@ contract; `briefing+repair` sends the validator's errors back once.
 
 Read the two tables together. The briefing is worth about as much as it looks
 on the second one and rather less on the first, and the repair round is where
-they come apart: it buys eleven contracts that validate and three that are
+they come apart: it buys thirteen contracts that validate and two that are
 right. Most of what a repair loop fixes is a contract that still draws the wrong
 chart, because a loop that retries until the validator is happy is optimizing
 for the validator. Seventeen of the requests cannot be drawn at all — a 3D

@@ -61,8 +61,10 @@ def get(name: str) -> Condition:
 
     `minus:vega_lite` is the briefing without that section; `minus:shape,flat`
     without either, because leave-one-out cannot see two sections that teach the
-    same thing; `only:types,channels,rules` is the part the docstring of
-    `agent.context` claims is load-bearing, which is a claim worth testing.
+    same thing; `only:types,channels,rules` is the part `agent.context` used to
+    call load-bearing, until running this scored it 57 requests below the whole
+    briefing — with the column list kept, 58 — which is why the docstring now
+    says something else.
     """
     if name in CONDITIONS:
         return CONDITIONS[name]

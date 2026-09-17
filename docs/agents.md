@@ -26,9 +26,12 @@ Read it: [The contract](CONTRACT.md).
     jp.contract(df, include=("types", "channels", "rules"))
     ```
 
-    The load-bearing third, for when the prompt budget is tight. Sections:
+    For when the prompt budget is tight — but narrow it gently. `uv run evals
+    ablation` puts the loss from dropping any single section inside the noise,
+    while cutting down to these three costs 58 of 144 requests even with the
+    column list kept: the document is redundant rather than padded. Sections:
     `overview`, `shape`, `types`, `channels`, `data`, `style`, `output`, `flat`,
-    `rules`, `example`.
+    `vega_lite`, `rules`, `example`.
 
 === "Machine-readable"
 
@@ -140,7 +143,7 @@ uv run evals --live          # ask qwen2.5:7b-instruct again
 | columns + a sentence naming the flat keys | 30 / 144 | 51 / 144 |
 | columns + "write me Vega-Lite", translated by the dialect | 43 / 144 | 46 / 144 |
 | columns + the generated contract | 75 / 144 | 112 / 144 |
-| …plus one repair round | 78 / 144 | 123 / 144 |
+| …plus one repair round | 77 / 144 | 125 / 144 |
 
 A contract that validates is not yet the chart that was asked for: the eval
 compares the plot frame — chart type, columns per role, aggregation, rows — to a
