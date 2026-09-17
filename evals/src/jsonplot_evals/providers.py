@@ -37,13 +37,14 @@ class Provider(Protocol):
 class Ollama:
     name = "ollama"
 
-    #: Ollama truncates a prompt longer than the context window without saying
-    #: so, which stops measuring the briefing and starts measuring its first N
-    #: tokens. The default is 4096; the briefing is ~3.9k tokens, so one model
-    #: fit by two hundred tokens and the next one silently did not — 110 of its
-    #: 144 answers came back empty. Set it high enough that the prompt is what
-    #: was written, and record it in `params` so a run with a different window
-    #: is a different condition rather than the same number.
+    #: The window bounds the prompt and the answer together, and ollama's
+    #: default is 4096. The briefing tokenizes to ~3.85k for qwen2.5 and ~4.07k
+    #: for gemma4 — same document, different tokenizer — which left the first
+    #: ~250 tokens to answer in and the second ~25. Nothing is reported: the
+    #: generation stops at the ceiling, and 110 of gemma4's 144 answers came
+    #: back empty. Set it wide enough to answer in, and record it in `params`
+    #: so a run with a different window is a different condition rather than
+    #: the same number.
     CONTEXT = 8192
 
     def __init__(self, model: str, url: str = OLLAMA, timeout: int = 180,

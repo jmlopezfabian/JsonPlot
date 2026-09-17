@@ -130,11 +130,17 @@ Zero valid contracts, and yet 17 right — because the dataset has exactly 17
 requests that cannot be drawn, where failing *is* the right answer. A model that
 produces nothing at all scores 17.
 
-The cause was not the model. Ollama truncates a prompt longer than the context
-window and says nothing about it. The default window is 4,096 tokens; the
-briefing is about 3,900. One model fit by two hundred tokens, the next one did
-not, and 110 of its 144 answers came back empty. The harness was measuring its
-own ceiling and reporting it as a property of the model.
+The cause was not the model. Ollama's context window bounds the prompt and the
+generated answer *together*, and the default is 4,096 tokens. The briefing
+tokenizes to about 3,850 for one model and 4,071 for the other — the same
+document, a different tokenizer, six percent apart. The first left roughly 250
+tokens to answer in, which is enough for a chart contract. The second left
+twenty-five, and 110 of its 144 answers came back empty. Nothing was reported:
+the generation simply stopped at the ceiling.
+
+The median answer length tells the whole story — 25 tokens at a window of 4,096,
+112 tokens at 8,192, from identical prompts. The harness was measuring its own
+ceiling and reporting it as a property of the model.
 
 If that number had been published, it would have looked entirely reasonable.
 Small model, long document, poor results — of course. It would have been a lie,
