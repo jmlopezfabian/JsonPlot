@@ -19,7 +19,9 @@ VALID = [
     {"viz_type": "bar", "x_axis": "a", "y_axis": "b", "stacked": True,
      "orientation": "horizontal"},
     {"viz_type": "barplot", "x_axis": "a", "y_axis": "b"},           # synonym
-    {"version": "1.0", "viz_type": "area", "backend": "seaborn",
+    # bar, not area: seaborn has no area renderer, and a contract naming a pair
+    # this installation cannot draw is now rejected here rather than at render
+    {"version": "1.0", "viz_type": "bar", "backend": "seaborn",
      "encoding": {"x": {"field": "a"}, "y": {"field": "b", "aggregate": "mean"}},
      "style": {"palette": "safe3"}, "output": {"format": "png", "dpi": 200}},
 ]

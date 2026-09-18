@@ -41,9 +41,9 @@ def context(
     that no longer exists. Narrow it with `sections` when the prompt budget is
     tight, but narrow it gently: `uv run evals ablation` puts dropping any one
     section inside the noise, and cutting down to `("types", "channels",
-    "rules")` — with the columns kept — loses 58 of 144 requests. The document
+    "rules")` — with the columns kept — loses 51 of 144 requests. The document
     is redundant, not padded: no one part carries it, and most of it together
-    does. The `df` is the exception. Its column list is 677 characters and 36
+    does. The `df` is the exception. Its column list is 677 characters and 34
     requests, the only part this eval can show paying for itself.
     """
     doc = contract(df, include=sections, examples=examples)

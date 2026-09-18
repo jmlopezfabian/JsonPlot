@@ -89,16 +89,16 @@ comes back: does it validate, and does it draw the chart that was asked for?
 | Prompt | Right chart | Valid contract |
 | --- | --- | --- |
 | columns + a sentence naming the keys | 30 / 144 | 51 / 144 |
-| columns + "write me Vega-Lite" | 43 / 144 | 46 / 144 |
-| columns + the generated contract | 75 / 144 | 112 / 144 |
+| columns + "write me Vega-Lite" | 41 / 144 | 44 / 144 |
+| columns + the generated contract | 68 / 144 | 103 / 144 |
 | …plus one repair round | 77 / 144 | 125 / 144 |
 
 <small>`qwen2.5:7b-instruct` via Ollama, replayed from the answers recorded in
 `evals/runs/`. Seventeen requests ask for something this cannot draw — a 3D
 surface, one bar for each of 1200 respondents — and there a rejection is the
 right outcome and is scored as one. The last row is why both columns are shown:
-one repair round buys thirteen contracts that validate and two that are right,
-because retrying until the validator is happy optimizes for the
+one repair round buys twenty-two contracts that validate and nine that are
+right, because retrying until the validator is happy optimizes for the
 validator.</small>
 
 Which part of that document is doing the work is a separate question, and a

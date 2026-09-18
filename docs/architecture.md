@@ -19,7 +19,16 @@ DataFrame ────────────────────┘       
 | 6 · export | `render/driver.py` | `Figure` | figure, png, svg or base64 |
 
 Anything that can fail because of the contract fails in stages 2 and 3, before
-matplotlib is touched at all.
+matplotlib is touched at all. That includes asking for a `viz_type` this
+installation cannot draw on the chosen `backend`: stage 2 checks the registry,
+so `violin` without seaborn is a `RENDERER_NOT_FOUND` from `validate` rather
+than an exception from `plot`.
+
+This page claimed that sentence for a while before it was true. `violin` on
+matplotlib passed validation and raised at stage 5, which is the single failure
+mode the contract exists to rule out — an agent that validates before drawing
+had no way to find out. The eval is what surfaced it: 32 recorded contracts
+across three models validated and could not be drawn.
 
 ## The plot frame
 
@@ -87,8 +96,8 @@ at all about this framework, and lets the dialect translate:
 | Prompt | Right chart | Valid contract |
 |---|---|---|
 | columns + a sentence naming the flat keys | 30 / 144 | 51 / 144 |
-| columns + "write me Vega-Lite" | 43 / 144 | 46 / 144 |
-| columns + the generated contract | 75 / 144 | 112 / 144 |
+| columns + "write me Vega-Lite" | 41 / 144 | 44 / 144 |
+| columns + the generated contract | 68 / 144 | 103 / 144 |
 | …plus one repair round | 77 / 144 | 125 / 144 |
 
 So the dialect does **not** replace the briefing, and it was worth measuring
@@ -203,9 +212,9 @@ repair loop of `agent.repair`, driven by someone else's framework.
 Sections can be dropped with `include=` when the prompt budget is tight, though
 `uv run evals ablation` says to do it gently: dropping any single section moves
 the score by an amount the eval cannot distinguish from noise, while keeping
-only `types`, `channels` and `rules` — the column list included — loses 58 of
+only `types`, `channels` and `rules` — the column list included — loses 51 of
 144 requests. The document is redundant rather than padded. What is not
-redundant is the DataFrame's column list: 677 characters, 36 requests, the one
+redundant is the DataFrame's column list: 677 characters, 34 requests, the one
 part that measurably pays for itself.
 
 ### Whether it earns its size
@@ -221,11 +230,11 @@ qwen2.5:7b-instruct:
 | Prompt | Right chart | Valid contract |
 |---|---|---|
 | columns + a sentence naming the flat keys | 30 / 144 | 51 / 144 |
-| columns + the briefing | 75 / 144 | 112 / 144 |
+| columns + the briefing | 68 / 144 | 103 / 144 |
 | ...plus one repair round | 77 / 144 | 125 / 144 |
 
 The briefing moves both columns. The repair round moves them by very different
-amounts — thirteen contracts that validate, two that are right — and that gap is
+amounts — twenty-two contracts that validate, nine that are right — and that gap is
 the useful warning in the table: a loop that retries until the validator accepts
 is optimizing for the validator, so most of what it buys is a contract that
 draws the wrong chart convincingly. On a twelve-request version of this eval the

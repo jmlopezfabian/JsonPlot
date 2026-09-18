@@ -28,7 +28,7 @@ Read it: [The contract](CONTRACT.md).
 
     For when the prompt budget is tight — but narrow it gently. `uv run evals
     ablation` puts the loss from dropping any single section inside the noise,
-    while cutting down to these three costs 58 of 144 requests even with the
+    while cutting down to these three costs 51 of 144 requests even with the
     column list kept: the document is redundant rather than padded. Sections:
     `overview`, `shape`, `types`, `channels`, `data`, `style`, `output`, `flat`,
     `vega_lite`, `rules`, `example`.
@@ -141,8 +141,8 @@ uv run evals --live          # ask qwen2.5:7b-instruct again
 | Prompt | Right chart | Valid contract |
 | --- | --- | --- |
 | columns + a sentence naming the flat keys | 30 / 144 | 51 / 144 |
-| columns + "write me Vega-Lite", translated by the dialect | 43 / 144 | 46 / 144 |
-| columns + the generated contract | 75 / 144 | 112 / 144 |
+| columns + "write me Vega-Lite", translated by the dialect | 41 / 144 | 44 / 144 |
+| columns + the generated contract | 68 / 144 | 103 / 144 |
 | …plus one repair round | 77 / 144 | 125 / 144 |
 
 A contract that validates is not yet the chart that was asked for: the eval

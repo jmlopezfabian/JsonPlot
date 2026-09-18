@@ -96,6 +96,26 @@ def test_a_backend_that_lacks_the_type(df):
     assert "matplotlib" in exc.value.errors[0].hint
 
 
+def test_validate_refuses_what_the_backend_cannot_draw(df):
+    """The promise is that validating is enough. `violin` on matplotlib used to
+    pass validation and then raise inside plot(), which is the one failure the
+    contract exists to prevent."""
+    spec = {"viz_type": "violin", "x_axis": "region", "y_axis": "revenue"}
+    errors = jp.validate(spec, df)
+    assert [e.code for e in errors] == [Code.RENDERER_NOT_FOUND]
+    assert "seaborn" in errors[0].hint
+
+    # and without a DataFrame: which backends exist is not a question about data
+    assert [e.code for e in jp.validate(spec)] == [Code.RENDERER_NOT_FOUND]
+
+
+def test_what_validate_accepts_draws(df):
+    spec = {"viz_type": "violin", "backend": "seaborn",
+            "x_axis": "region", "y_axis": "revenue"}
+    assert jp.validate(spec, df) == []
+    assert isinstance(jp.plot(spec, df), Figure)
+
+
 @pytest.mark.parametrize("fmt,kind", [("png", bytes), ("svg", str), ("base64", str)])
 def test_output_formats(df, fmt, kind):
     out = jp.plot(TYPES["bar"], df, output=fmt)

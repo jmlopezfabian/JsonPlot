@@ -5,18 +5,19 @@
 # measured number, so that a single item changing its mind is a review comment
 # rather than a broken build.
 #
-# Measured 2026-09-17, all three at a context window of 8192 — at ollama's
-# default of 4096 the briefing leaves gemma4 twenty-five tokens to answer in and
-# its score is a measurement of the ceiling, not of the model.
+# Re-measured 2026-09-18, after `validate` started refusing a viz_type the
+# chosen backend cannot draw. That took 32 contracts across the three models out
+# of "valid", and the scores with it — the gate caught the drop against the
+# previous floors, which is what it is for.
 
 [v1-baseline."qwen2.5:7b-instruct"]
-briefing = 72
+briefing = 65
 "briefing+repair" = 74
 
 [v1-baseline."gemma4:e4b"]
-briefing = 88
-"briefing+repair" = 90
+briefing = 85
+"briefing+repair" = 87
 
 [v1-baseline."llama3.2:3b"]
-briefing = 31
-"briefing+repair" = 30
+briefing = 30
+"briefing+repair" = 29

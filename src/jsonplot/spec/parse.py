@@ -30,7 +30,8 @@ def parse_spec(raw: Any) -> tuple[Spec | None, list[SpecError]]:
     Returns `(spec, [])` when valid and `(None, errors)` when not.
     """
     if isinstance(raw, Spec):
-        return raw, []
+        unavailable = _unavailable(raw)
+        return (None, [unavailable]) if unavailable else (raw, [])
     if isinstance(raw, (str, bytes)):
         try:
             raw = json.loads(raw)
@@ -52,9 +53,30 @@ def parse_spec(raw: Any) -> tuple[Spec | None, list[SpecError]]:
         )]
 
     try:
-        return Spec.model_validate(canonical), []
+        spec = Spec.model_validate(canonical)
     except ValidationError as exc:
         return None, _translate(exc)
+
+    unavailable = _unavailable(spec)
+    return (None, [unavailable]) if unavailable else (spec, [])
+
+
+def _unavailable(spec: Spec) -> SpecError | None:
+    """Whether this installation can draw the contract at all.
+
+    A `viz_type` the chosen backend does not implement is caught here rather
+    than at render time, because the promise of the contract is that validating
+    it is enough: `violin` on matplotlib used to pass `validate` and then raise
+    inside `plot`, which is the one failure mode the whole design exists to
+    prevent. Same error object either way, so the message does not depend on
+    which door the contract came through.
+
+    Imported late: the registry reaches back into this package for capabilities.
+    """
+    from ..render.registry import get_renderer
+
+    _, error = get_renderer(spec.viz_type, spec.backend)
+    return error
 
 
 # --------------------------------------------------------------------------
